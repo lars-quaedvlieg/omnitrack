@@ -6,3 +6,5 @@ from .core.session import LogSession as LogSession
 from .sinks.console import ConsoleSink as ConsoleSink
 from .sinks.jsonl import JSONLSink as JSONLSink
 from .sinks.wandb import WandbSink as WandbSink
+
+__version__ = "0.1.0"
