@@ -1,4 +1,5 @@
 import time
+from numbers import Number
 from typing import Dict, Iterable
 
 import psutil
@@ -19,7 +20,7 @@ from rich.text import Text
 from rich.tree import Tree
 
 from ..core.interfaces import Sink, SupportsFlush
-from ..core.types import ConfigRecord, MetricRecord, TagRecord
+from ..core.types import ConfigRecord, MetricRecord, MetricValue, TagRecord
 from ..utils.helpers import flatten_dict
 
 try:
@@ -150,6 +151,10 @@ class ConsoleSink(Sink, SupportsFlush):
 
     def emit_metrics(self, batch: Iterable[MetricRecord]) -> None:
         for r in batch:
+            # Validate metric types for console display
+            for metric_key, metric_value in r.metrics.items():
+                self._validate_metric_type(metric_key, metric_value)
+
             payload = flatten_dict(r.metrics)
 
             if r.step_name not in self.tasks:
@@ -198,6 +203,21 @@ class ConsoleSink(Sink, SupportsFlush):
             self._layout["system"].update(self.system_stats.render())
         if self._live:
             self._live.refresh()
+
+    def _validate_metric_type(self, metric_key: str, metric_value) -> None:
+        """Validate that a metric value is supported by ConsoleSink."""
+        if isinstance(metric_value, MetricValue):
+            raise TypeError(
+                f"ConsoleSink does not support custom MetricValue types. "
+                f"Metric '{metric_key}' has type {type(metric_value).__name__}. "
+                f"Use numeric types (int, float, Number) instead."
+            )
+        if not isinstance(metric_value, (int, float, Number)):
+            raise TypeError(
+                f"ConsoleSink only supports numeric metric values. "
+                f"Metric '{metric_key}' has unsupported type {type(metric_value).__name__}. "
+                f"Use int, float, or Number types instead."
+            )
 
     def _style_metric(self, key, value) -> str:
         if isinstance(value, (int, float)):

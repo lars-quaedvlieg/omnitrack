@@ -34,10 +34,7 @@ class LogSession:
         # Close sinks
         for sink in self.sinks:
             if isinstance(sink, SupportsFlush):
-                try:
-                    sink.flush()
-                except Exception:
-                    pass
+                sink.flush()
             sink.on_close()
         set_current(None)
 
@@ -104,10 +101,7 @@ class LogSession:
                     sink_name = type(sink).__name__
                     filtered = self._filter_records(metrics_to_push, sink_name)
                     if filtered:
-                        try:
-                            sink.emit_metrics(filtered)
-                        except Exception:
-                            pass
+                        sink.emit_metrics(filtered)
 
             # If no step_names filter, clear all metrics after pushing
             if step_names is None:
@@ -119,10 +113,7 @@ class LogSession:
                 sink_name = type(sink).__name__
                 filtered = self._filter_records(self._configs, sink_name)
                 for rec in filtered:
-                    try:
-                        sink.emit_config(rec)
-                    except Exception:
-                        pass
+                    sink.emit_config(rec)
             if step_names is None:
                 self._configs.clear()
 
@@ -132,20 +123,14 @@ class LogSession:
                 sink_name = type(sink).__name__
                 filtered = self._filter_records(self._tags, sink_name)
                 for rec in filtered:
-                    try:
-                        sink.emit_tags(rec)
-                    except Exception:
-                        pass
+                    sink.emit_tags(rec)
             if step_names is None:
                 self._tags.clear()
 
         # Flush sinks that support it
         for sink in self.sinks:
             if isinstance(sink, SupportsFlush):
-                try:
-                    sink.flush()
-                except Exception:
-                    pass
+                sink.flush()
 
     def _filter_records(self, records, sink_name: str):
         """Filter records based on include/exclude lists."""

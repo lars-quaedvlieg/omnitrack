@@ -4,12 +4,12 @@ import time
 
 from omnitrack import LogSession, push, push_config, record, set_tags, step
 from omnitrack.sinks.console import ConsoleSink
-from omnitrack.sinks.jsonl import JSONLSink
+from omnitrack.sinks.jsonl import LocalLogger
 from omnitrack.sinks.wandb import WandbSink
 
 
 def run_demo(jsonl_path: str, wandb_project: str | None, mode: str = "standard"):
-    sinks = [ConsoleSink(), JSONLSink(jsonl_path)]
+    sinks = [ConsoleSink(), LocalLogger(jsonl_path)]
     if wandb_project and WandbSink is not None:
         # silence wandb logs
         os.environ["WANDB_SILENT"] = "true"
@@ -50,7 +50,7 @@ def run_standard_training(sinks):
         mean_loss = mean_acc = 0.0
 
         for b in range(num_batches):
-            step(name="batch")
+            step(name="debug/batch")
 
             # global step ensures smooth curve across epochs
             global_step = e * num_batches + b
@@ -58,7 +58,7 @@ def run_standard_training(sinks):
             acc = 1 - loss
 
             # Demo: exclude console sink for batch metrics (too noisy)
-            record(step_name="batch", loss=loss, acc=acc, exclude=["JSONLSink"])
+            record(step_name="batch", loss=loss, acc=acc, exclude=["LocalLogger"])
             mean_loss += loss
             mean_acc += acc
             time.sleep(0.05)
@@ -68,7 +68,7 @@ def run_standard_training(sinks):
             step_name="epoch",
             loss=mean_loss / num_batches,
             acc=mean_acc / num_batches,
-            include=["JSONLSink", "WandbSink"],  # Show epoch summaries in console and JSONL
+            include=["LocalLogger", "WandbSink"],  # Show epoch summaries in console and LocalLogger
         )
         push(step_names=["epoch"])
 
@@ -93,7 +93,7 @@ def run_alternating_training(sinks):
             acc = 1 - loss
 
             # Log step_a metrics
-            record(step_name="step_a", loss=loss, acc=acc, exclude=["JSONLSink"])
+            record(step_name="step_a", loss=loss, acc=acc, exclude=["LocalLogger"])
             outer_loss_a += loss
             outer_acc_a += acc
             time.sleep(0.05)
@@ -108,7 +108,7 @@ def run_alternating_training(sinks):
             acc = 1 - loss
 
             # Log step_b metrics
-            record(step_name="step_b", loss=loss, acc=acc, exclude=["JSONLSink"])
+            record(step_name="step_b", loss=loss, acc=acc, exclude=["LocalLogger"])
             outer_loss_b += loss
             outer_acc_b += acc
             time.sleep(0.05)
@@ -120,7 +120,7 @@ def run_alternating_training(sinks):
             acc_a=outer_acc_a / num_inner,
             loss_b=outer_loss_b / num_inner,
             acc_b=outer_acc_b / num_inner,
-            include=["JSONLSink", "WandbSink"],
+            include=["LocalLogger", "WandbSink"],
         )
         push(step_names=["outer"])
 

@@ -63,13 +63,13 @@ Omnitrack uses a **session-based** approach where you define sinks (backends) th
 ```python
 from omnitrack import LogSession
 from omnitrack.sinks.console import ConsoleSink
-from omnitrack.sinks.jsonl import JSONLSink
+from omnitrack.sinks.jsonl import LocalLogger
 from omnitrack.sinks.wandb import WandbSink
 
 # Multiple sinks for different purposes
 with LogSession(sinks=[
     ConsoleSink(),                    # Real-time console output
-    JSONLSink("logs/experiment.jsonl"), # Structured logging
+    LocalLogger("logs/experiment.jsonl"), # Structured logging
     WandbSink(project="my-project")   # Weights & Biases tracking
 ]):
     # Your experiment code here
@@ -136,20 +136,57 @@ ConsoleSink(title="My Experiment", show_system=True)
 - Color-coded metrics
 - Log panel for messages
 
-### JSONLSink
-Structured logging to JSON Lines format for easy analysis.
+### LocalLogger
+Structured local logging that maintains hierarchical data for easy analysis.
 
 ```python
-from omnitrack.sinks.jsonl import JSONLSink
+from omnitrack.sinks.jsonl import LocalLogger
 
-JSONLSink("logs/experiment.jsonl")
+LocalLogger("logs/experiment.json")
 ```
 
 **Features:**
-- Machine-readable format
-- Easy to parse and analyze
-- Includes timestamps and metadata
-- Perfect for custom analysis scripts
+- **Structured data format**: Metrics grouped by step type with lists of values
+- **Config accumulation**: All configs merged into a single tree structure  
+- **Tag accumulation**: All tags merged into a single structure
+- **Pandas-friendly**: Easy to load back into pandas for analysis
+- **Single JSON file**: Complete run data in one structured file
+- **Metadata tracking**: Run duration, step counts, and timing info
+- **Analysis integration**: Direct conversion to pandas DataFrames and structured data formats
+
+**Example LocalLogger Output:**
+```json
+{
+  "run_id": "abc123",
+  "config": {
+    "lr": 0.001,
+    "batch_size": 64,
+    "model": {"name": "transformer", "layers": 6}
+  },
+  "tags": {"env": "demo", "version": "v1.0"},
+  "metrics": {
+    "batch": {
+      "steps": [0, 1, 2, 0, 1, 2],
+      "metrics": {
+        "loss": [0.5, 0.25, 0.167, 0.25, 0.2, 0.167],
+        "acc": [0.5, 0.75, 0.833, 0.75, 0.8, 0.833]
+      }
+    },
+    "epoch": {
+      "steps": [0, 1],
+      "metrics": {
+        "loss": [0.5, 0.4],
+        "acc": [0.5, 0.6]
+      }
+    }
+  },
+  "metadata": {
+    "start_time": 1234567890.123,
+    "end_time": 1234567890.456,
+    "total_steps": {"batch": 2, "epoch": 1}
+  }
+}
+```
 
 ### WandbSink
 Integration with Weights & Biases for experiment tracking.
@@ -165,6 +202,36 @@ WandbSink(project="my-project", entity="my-team")
 - Proper step relationships
 - Config and tag tracking
 - Rich visualizations
+
+## 📊 Data Analysis Integration
+
+Omnitrack provides seamless data loading and analysis capabilities:
+
+```python
+from omnitrack.loaders import LocalLoggerLoader
+import pandas as pd
+
+# Load your experiment data
+loader = LocalLoggerLoader("logs/experiment.json")
+
+# Get structured data
+plot_data = loader.get_plot_data("epoch", "step", ["loss", "acc"])
+table_data = loader.get_table_data("epoch", ["loss", "acc"])
+
+# Direct pandas analysis
+df = loader.get_metrics_df("epoch")
+print(df.describe())
+
+# Custom analysis
+summary = loader.get_summary_stats()
+print(f"Final loss: {summary['metrics_summary']['epoch']['loss']['final']}")
+```
+
+**Key Benefits:**
+- **Zero boilerplate**: Direct conversion to pandas DataFrames
+- **Structured analysis**: Clean data formats for any visualization library
+- **Flexible output**: Works with matplotlib, seaborn, plotly, or any plotting library
+- **Complete workflow**: From experiment tracking to analysis
 
 ## 🔧 Advanced Usage
 
