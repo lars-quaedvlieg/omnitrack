@@ -23,7 +23,7 @@ dependencies = [
 packages = ["omnitrack"]
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff", "black", "build", "twine"]
+dev = ["pytest", "ruff", "black", "build", "twine", "pre-commit"]
 
 [tool.ruff]
 line-length = 100
